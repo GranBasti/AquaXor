@@ -10,9 +10,11 @@ class AquaViewModelFactory(private val c: AppContainer) : ViewModelProvider.Fact
         modelClass.isAssignableFrom(SessionViewModel::class.java) ->
             SessionViewModel(c.repository, c.session, c.connectivity, c.messages) as T
         modelClass.isAssignableFrom(SampleViewModel::class.java) ->
-            SampleViewModel(c.repository, c.storage, c.session, c.connectivity, c.messages) as T
+            SampleViewModel(c.repository, c.storage, c.session, c.connectivity, c.messages, c.sincronizador) as T
         modelClass.isAssignableFrom(AdminViewModel::class.java) ->
             AdminViewModel(c.repository, c.session, c.messages) as T
+        modelClass.isAssignableFrom(ClimaViewModel::class.java) ->
+            ClimaViewModel(c.weather) as T
         else -> throw IllegalArgumentException("ViewModel desconocido: ${modelClass.name}")
     }
 }

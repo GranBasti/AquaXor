@@ -6,6 +6,8 @@ import androidx.lifecycle.viewModelScope
 import cl.aquaxor.app.data.MessageBus
 import cl.aquaxor.app.data.SessionManager
 import cl.aquaxor.app.data.network.ConnectivityObserver
+import cl.aquaxor.app.data.network.ResultadoSync
+import cl.aquaxor.app.data.network.SincronizadorInsForge
 import cl.aquaxor.app.data.repository.AquaRepository
 import cl.aquaxor.app.data.storage.FileStorage
 import cl.aquaxor.app.model.Adjunto
@@ -20,10 +22,11 @@ import cl.aquaxor.app.model.ResumenGeneral
 import cl.aquaxor.app.model.TipoAdjunto
 import cl.aquaxor.app.model.Tren
 import cl.aquaxor.app.model.puedeEliminar
+import cl.aquaxor.app.util.BarraDia
+import cl.aquaxor.app.util.Estadisticas
 import cl.aquaxor.app.util.Formatos
 import cl.aquaxor.app.util.Reporte
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -73,7 +76,8 @@ class SampleViewModel(
     private val storage: FileStorage,
     private val session: SessionManager,
     connectivity: ConnectivityObserver,
-    private val messages: MessageBus
+    private val messages: MessageBus,
+    private val sincronizador: SincronizadorInsForge
 ) : ViewModel() {
 
     private val compartir = SharingStarted.WhileSubscribed(5_000)
@@ -238,6 +242,8 @@ class SampleViewModel(
     }
 
     fun guardar(onGuardada: (Long) -> Unit) {
+        // Muestra nueva: la fecha y hora son las del instante de guardado (no se editan a mano).
+        if (_borrador.value.original == null) _borrador.update { it.copy(fechaHora = System.currentTimeMillis()) }
         if (!validarFormulario()) return
         val b = _borrador.value
         val usuario = session.usuario.value ?: return
@@ -299,11 +305,25 @@ class SampleViewModel(
         .map { lista -> lista.associate { it.estado to it.total } }
         .stateIn(viewModelScope, compartir, emptyMap())
 
+    /** Deja seleccionado el estado indicado (sin alternar), usado desde los indicadores del inicio. */
+    fun mostrarEstado(e: EstadoRevision) { _estadoSeleccionado.value = e }
+
     fun seleccionarEstado(e: EstadoRevision?) {
         _estadoSeleccionado.value = if (_estadoSeleccionado.value == e) null else e
     }
 
     // ====================== Inicio (indicadores) ======================
+    /** Individuos contados por día en la última semana, para el gráfico de barras. */
+    val serieSemanal: StateFlow<List<BarraDia>> = repo
+        .puntosDesde(System.currentTimeMillis() - 7L * 24 * 3600 * 1000)
+        .map { Estadisticas.individuosPorDia(it) }
+        .stateIn(viewModelScope, compartir, Estadisticas.individuosPorDia(emptyList()))
+
+    /** Cantidad de muestras por rango de fechas (Todo, Hoy, 7 días, 30 días). */
+    val conteoRangos: StateFlow<Map<RangoFecha, Int>> = repo.puntosDesde(0L)
+        .map { Estadisticas.conteoPorRango(it) }
+        .stateIn(viewModelScope, compartir, RangoFecha.entries.associateWith { 0 })
+
     val resumen: StateFlow<ResumenGeneral> = combine(
         repo.totalMuestras(),
         repo.conteoPorEstado(),
@@ -373,10 +393,16 @@ class SampleViewModel(
         if (_sincronizando.value) return
         viewModelScope.launch {
             _sincronizando.value = true
-            delay(1_500) // aquí iría la llamada a la API REST
-            val n = repo.marcarSincronizadas()
+            val resultado = sincronizador.sincronizar()
             _sincronizando.value = false
-            messages.enviar(if (n == 0) "No hay muestras pendientes de sincronizar" else "$n muestra(s) sincronizada(s) (simulado)")
+            messages.enviar(
+                when (resultado) {
+                    ResultadoSync.NoConfigurado -> "InsForge no está configurado (revisa INSFORGE_URL e INSFORGE_KEY)"
+                    ResultadoSync.SinPendientes -> "No hay muestras pendientes de sincronizar"
+                    is ResultadoSync.Exito -> "${resultado.cantidad} muestra(s) enviadas a InsForge"
+                    is ResultadoSync.Error -> resultado.mensaje
+                }
+            )
         }
     }
 
@@ -390,4 +416,15 @@ class SampleViewModel(
     }
 
     fun nombreArchivoReporte(): String = "historial_aquaxor_${Formatos.marcaArchivo()}.csv"
+
+    /** Descarga individual: escribe un CSV con solo la muestra abierta en el detalle. */
+    fun exportarMuestra(id: Long, uri: Uri) {
+        val fila = detalle.value?.takeIf { it.muestra.id == id } ?: return
+        viewModelScope.launch {
+            val ok = storage.escribir(uri, Reporte.csv(listOf(fila)))
+            messages.enviar(if (ok) "Muestra #$id descargada" else "No se pudo descargar la muestra")
+        }
+    }
+
+    fun nombreArchivoMuestra(id: Long): String = "muestra_${id}_aquaxor_${Formatos.marcaArchivo()}.csv"
 }

@@ -10,7 +10,8 @@ data class MuestraResumen(
     val lineaNombre: String,
     val operadorNombre: String,
     val totalFotos: Int,
-    val totalDocumentos: Int
+    val totalDocumentos: Int,
+    val primeraFoto: String? = null
 )
 
 data class ConteoEstado(
@@ -44,4 +45,10 @@ data class FiltrosHistorial(
     val estado: EstadoRevision? = null,
     val rango: RangoFecha = RangoFecha.TODOS,
     val centroId: Long? = null
+)
+
+/** Punto mínimo (fecha, cantidad) para construir series de gráficos. */
+data class PuntoMuestra(
+    val fechaHora: Long,
+    val cantidad: Int
 )

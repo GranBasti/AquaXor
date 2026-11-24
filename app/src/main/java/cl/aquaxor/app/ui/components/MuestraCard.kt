@@ -1,6 +1,8 @@
 package cl.aquaxor.app.ui.components
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -12,7 +14,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CloudDone
 import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.LinearScale
+import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PhotoCamera
+import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.Waves
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -21,7 +28,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import coil.compose.AsyncImage
+import java.io.File
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -39,7 +51,10 @@ fun MuestraCard(item: MuestraResumen, onClick: () -> Unit, modifier: Modifier = 
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Row(Modifier.padding(14.dp), verticalAlignment = Alignment.Top) {
+        Miniatura(item.primeraFoto, Modifier.size(72.dp))
+        Spacer(Modifier.width(12.dp))
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     "Muestra #${m.id}",
@@ -49,15 +64,12 @@ fun MuestraCard(item: MuestraResumen, onClick: () -> Unit, modifier: Modifier = 
                 )
                 EstadoChip(m.estado)
             }
-            Text(
-                "${item.centroNombre} · ${item.trenNombre} · ${item.lineaNombre}",
-                style = MaterialTheme.typography.bodyMedium
-            )
-            Text(
-                "${Formatos.fechaHora(m.fechaHora)} · Tramo ${m.tramo}",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            FilaIcono(Icons.Default.LocationOn, "${item.centroNombre} · ${item.trenNombre} · ${item.lineaNombre}")
+            FilaIcono(Icons.Default.Schedule, Formatos.fechaHora(m.fechaHora), secundario = true)
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                FilaIcono(Icons.Default.LinearScale, "Tramo ${m.tramo}", secundario = true)
+                FilaIcono(Icons.Default.Person, item.operadorNombre, secundario = true)
+            }
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
                 Text(
                     "${m.cantidadIndividuos} individuos",
@@ -76,6 +88,42 @@ fun MuestraCard(item: MuestraResumen, onClick: () -> Unit, modifier: Modifier = 
                 )
             }
         }
+        }
+    }
+}
+
+/** Foto de la muestra (primera evidencia) o un ícono si no tiene. */
+@Composable
+private fun Miniatura(ruta: String?, modifier: Modifier = Modifier) {
+    val forma = RoundedCornerShape(12.dp)
+    if (ruta != null) {
+        AsyncImage(
+            model = File(ruta),
+            contentDescription = "Foto de la muestra",
+            contentScale = ContentScale.Crop,
+            modifier = modifier.clip(forma)
+        )
+    } else {
+        Box(
+            modifier.clip(forma).background(MaterialTheme.colorScheme.primaryContainer),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(Icons.Default.Waves, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(32.dp))
+        }
+    }
+}
+
+@Composable
+private fun FilaIcono(icono: ImageVector, texto: String, secundario: Boolean = false) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Icon(icono, contentDescription = null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.primary)
+        Spacer(Modifier.width(5.dp))
+        Text(
+            texto,
+            style = if (secundario) MaterialTheme.typography.bodySmall else MaterialTheme.typography.bodyMedium,
+            color = if (secundario) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
+            maxLines = 1
+        )
     }
 }
 

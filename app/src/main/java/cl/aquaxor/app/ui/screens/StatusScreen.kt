@@ -6,12 +6,16 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Card
+import androidx.compose.material3.Icon
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
@@ -26,9 +30,14 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cl.aquaxor.app.model.EstadoRevision
 import cl.aquaxor.app.ui.components.AppDrawerScaffold
+import cl.aquaxor.app.ui.components.BarraHorizontal
+import cl.aquaxor.app.ui.components.GraficoDona
 import cl.aquaxor.app.ui.components.MuestraCard
+import cl.aquaxor.app.ui.components.Porcion
 import cl.aquaxor.app.ui.components.colorEstado
+import cl.aquaxor.app.ui.components.iconoEstado
 import cl.aquaxor.app.ui.navigation.Ruta
+import cl.aquaxor.app.util.Estadisticas
 import cl.aquaxor.app.viewmodel.SampleViewModel
 import cl.aquaxor.app.viewmodel.SessionViewModel
 
@@ -64,6 +73,26 @@ fun StatusScreen(
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
+            item {
+                val total = conteo.values.sum()
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                        GraficoDona(
+                            porciones = EstadoRevision.entries.map { Porcion(it.etiqueta, conteo[it] ?: 0, colorEstado(it).second) },
+                            centro = total.toString()
+                        )
+                        Spacer(Modifier.width(16.dp))
+                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            EstadoRevision.entries.forEach { e ->
+                                BarraHorizontal(e.etiqueta, conteo[e] ?: 0, Estadisticas.fraccion(conteo[e] ?: 0, total), colorEstado(e).second)
+                            }
+                        }
+                    }
+                }
+            }
             item {
                 Text(
                     "Toca un estado para filtrar la lista",
@@ -116,9 +145,13 @@ private fun EstadoCard(
         border = if (seleccionado) BorderStroke(2.dp, texto) else null,
         modifier = modifier
     ) {
-        Column(Modifier.padding(14.dp)) {
-            Text(total.toString(), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold, color = texto)
-            Text(estado.etiqueta, style = MaterialTheme.typography.labelLarge, color = texto)
+        Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
+            Icon(iconoEstado(estado), contentDescription = null, tint = texto, modifier = Modifier.size(28.dp))
+            Spacer(Modifier.width(10.dp))
+            Column {
+                Text(total.toString(), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold, color = texto)
+                Text(estado.etiqueta, style = MaterialTheme.typography.labelLarge, color = texto)
+            }
         }
     }
 }

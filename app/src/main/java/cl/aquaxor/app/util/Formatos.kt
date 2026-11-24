@@ -21,6 +21,7 @@ object Formatos {
 
     fun fecha(millis: Long): String = local(millis).format(fechaFmt)
     fun hora(millis: Long): String = local(millis).format(horaFmt)
+    fun horaCompleta(millis: Long): String = local(millis).format(DateTimeFormatter.ofPattern("HH:mm:ss", locale))
     fun fechaHora(millis: Long): String = local(millis).format(fechaHoraFmt)
     fun fechaHoraIso(millis: Long): String = local(millis).format(isoFmt)
     fun marcaArchivo(millis: Long = System.currentTimeMillis()): String = local(millis).format(archivoFmt)

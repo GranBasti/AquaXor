@@ -36,6 +36,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -43,6 +44,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import cl.aquaxor.app.viewmodel.LoginUiState
 import cl.aquaxor.app.viewmodel.SessionViewModel
 
 @Composable
@@ -52,6 +54,24 @@ fun LoginScreen(
     onLoginExitoso: () -> Unit
 ) {
     val state by vm.ui.collectAsStateWithLifecycle()
+    LoginContent(
+        state = state,
+        snackbarHostState = snackbarHostState,
+        onRutChange = vm::onRutChange,
+        onPasswordChange = vm::onPasswordChange,
+        onLogin = { vm.login(onLoginExitoso) }
+    )
+}
+
+/** Parte sin estado de la pantalla (recibe datos y eventos): se puede probar con Compose UI Test. */
+@Composable
+fun LoginContent(
+    state: LoginUiState,
+    snackbarHostState: SnackbarHostState,
+    onRutChange: (String) -> Unit,
+    onPasswordChange: (String) -> Unit,
+    onLogin: () -> Unit
+) {
     var verPassword by rememberSaveable { mutableStateOf(false) }
 
     Scaffold(
@@ -85,16 +105,16 @@ fun LoginScreen(
 
             OutlinedTextField(
                 value = state.rut,
-                onValueChange = vm::onRutChange,
+                onValueChange = onRutChange,
                 label = { Text("RUT (sin puntos ni guion)") },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Ascii, imeAction = ImeAction.Next),
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth().testTag("campo_rut")
             )
             Spacer(Modifier.height(12.dp))
             OutlinedTextField(
                 value = state.password,
-                onValueChange = vm::onPasswordChange,
+                onValueChange = onPasswordChange,
                 label = { Text("Contraseña") },
                 singleLine = true,
                 visualTransformation = if (verPassword) VisualTransformation.None else PasswordVisualTransformation(),
@@ -107,19 +127,20 @@ fun LoginScreen(
                     }
                 },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
-                keyboardActions = KeyboardActions(onDone = { vm.login(onLoginExitoso) }),
+                keyboardActions = KeyboardActions(onDone = { onLogin() }),
                 isError = state.error != null,
-                supportingText = { if (state.error != null) Text(state.error ?: "") },
-                modifier = Modifier.fillMaxWidth()
+                supportingText = { state.error?.let { Text(it) } },
+                modifier = Modifier.fillMaxWidth().testTag("campo_password")
             )
             Spacer(Modifier.height(16.dp))
 
             Button(
-                onClick = { vm.login(onLoginExitoso) },
+                onClick = { onLogin() },
                 enabled = state.rut.isNotBlank() && state.password.isNotBlank() && !state.cargando,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(52.dp)
+                    .testTag("boton_login")
             ) {
                 if (state.cargando) {
                     CircularProgressIndicator(modifier = Modifier.size(22.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.onPrimary)

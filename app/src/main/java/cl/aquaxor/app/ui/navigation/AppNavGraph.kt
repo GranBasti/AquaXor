@@ -13,7 +13,6 @@ import androidx.navigation.navArgument
 import cl.aquaxor.app.AppContainer
 import cl.aquaxor.app.ui.screens.AdminScreen
 import cl.aquaxor.app.ui.screens.DetalleScreen
-import cl.aquaxor.app.ui.screens.EvidenciaScreen
 import cl.aquaxor.app.ui.screens.FormScreen
 import cl.aquaxor.app.ui.screens.HistoryScreen
 import cl.aquaxor.app.ui.screens.LoginScreen
@@ -22,6 +21,7 @@ import cl.aquaxor.app.ui.screens.StatusScreen
 import cl.aquaxor.app.viewmodel.AdminViewModel
 import cl.aquaxor.app.viewmodel.AquaViewModelFactory
 import cl.aquaxor.app.viewmodel.SampleViewModel
+import cl.aquaxor.app.viewmodel.ClimaViewModel
 import cl.aquaxor.app.viewmodel.SessionViewModel
 import kotlinx.coroutines.flow.collectLatest
 
@@ -31,6 +31,7 @@ fun AppNavGraph(container: AppContainer) {
     val sessionVm: SessionViewModel = viewModel(factory = factory)
     val sampleVm: SampleViewModel = viewModel(factory = factory)
     val adminVm: AdminViewModel = viewModel(factory = factory)
+    val climaVm: ClimaViewModel = viewModel(factory = factory)
 
     val nav = rememberNavController()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -71,6 +72,7 @@ fun AppNavGraph(container: AppContainer) {
             MainScreen(
                 sessionVm = sessionVm,
                 sampleVm = sampleVm,
+                climaVm = climaVm,
                 snackbarHostState = snackbarHostState,
                 onNavegar = { navegarMenu(it) },
                 onCerrarSesion = { cerrarSesion() }
@@ -85,15 +87,6 @@ fun AppNavGraph(container: AppContainer) {
                     sampleVm.cancelar()
                     nav.popBackStack()
                 },
-                onSiguiente = { nav.navigate(Ruta.Evidencia.ruta) }
-            )
-        }
-
-        composable(Ruta.Evidencia.ruta) {
-            EvidenciaScreen(
-                vm = sampleVm,
-                snackbarHostState = snackbarHostState,
-                onBack = { nav.popBackStack() },
                 onGuardada = { id ->
                     nav.navigate(Ruta.Detalle.crear(id)) {
                         popUpTo(Ruta.Form.ruta) { inclusive = true }

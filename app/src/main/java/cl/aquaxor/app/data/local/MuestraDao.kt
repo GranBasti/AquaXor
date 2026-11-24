@@ -7,6 +7,7 @@ import androidx.room.Update
 import cl.aquaxor.app.model.ConteoEstado
 import cl.aquaxor.app.model.Muestra
 import cl.aquaxor.app.model.MuestraResumen
+import cl.aquaxor.app.model.PuntoMuestra
 import kotlinx.coroutines.flow.Flow
 
 private const val SELECT_RESUMEN = """
@@ -16,7 +17,8 @@ SELECT m.*,
        l.nombre AS lineaNombre,
        u.nombre AS operadorNombre,
        (SELECT COUNT(*) FROM adjuntos a WHERE a.muestraId = m.id AND a.tipo = 'FOTO') AS totalFotos,
-       (SELECT COUNT(*) FROM adjuntos a WHERE a.muestraId = m.id AND a.tipo = 'DOCUMENTO') AS totalDocumentos
+       (SELECT COUNT(*) FROM adjuntos a WHERE a.muestraId = m.id AND a.tipo = 'DOCUMENTO') AS totalDocumentos,
+       (SELECT a.ruta FROM adjuntos a WHERE a.muestraId = m.id AND a.tipo = 'FOTO' ORDER BY a.id LIMIT 1) AS primeraFoto
 FROM muestras m
 JOIN centros c ON c.id = m.centroId
 JOIN trenes t ON t.id = m.trenId
@@ -66,6 +68,15 @@ ORDER BY m.fechaHora DESC
 
     @Query("UPDATE muestras SET sincronizada = 1 WHERE sincronizada = 0")
     suspend fun marcarSincronizadas(): Int
+
+    @Query("UPDATE muestras SET sincronizada = 1 WHERE id IN (:ids)")
+    suspend fun marcarSincronizadas(ids: List<Long>): Int
+
+    @Query(SELECT_RESUMEN + " WHERE m.sincronizada = 0 ORDER BY m.fechaHora")
+    suspend fun pendientesDeSincronizar(): List<MuestraResumen>
+
+    @Query("SELECT fechaHora AS fechaHora, cantidadIndividuos AS cantidad FROM muestras WHERE fechaHora >= :desde")
+    fun puntosDesde(desde: Long): Flow<List<PuntoMuestra>>
 
     // ---- Indicadores ----
     @Query("SELECT COUNT(*) FROM muestras")

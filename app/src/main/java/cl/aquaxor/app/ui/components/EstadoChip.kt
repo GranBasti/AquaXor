@@ -5,7 +5,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.HourglassEmpty
+import androidx.compose.material.icons.filled.ReportProblem
+import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
@@ -16,6 +22,14 @@ fun colorEstado(estado: EstadoRevision): Pair<Color, Color> = when (estado) {
     EstadoRevision.EN_REVISION -> Color(0xFFD6E9FF) to Color(0xFF0D4F8B)
     EstadoRevision.APROBADA -> Color(0xFFCFF0DB) to Color(0xFF16633A)
     EstadoRevision.OBSERVADA -> Color(0xFFFADBD8) to Color(0xFF8E1F14)
+}
+
+/** Ícono que identifica cada estado de revisión (se usa junto al color). */
+fun iconoEstado(estado: EstadoRevision): ImageVector = when (estado) {
+    EstadoRevision.PENDIENTE -> Icons.Default.HourglassEmpty
+    EstadoRevision.EN_REVISION -> Icons.Default.Visibility
+    EstadoRevision.APROBADA -> Icons.Default.CheckCircle
+    EstadoRevision.OBSERVADA -> Icons.Default.ReportProblem
 }
 
 @Composable

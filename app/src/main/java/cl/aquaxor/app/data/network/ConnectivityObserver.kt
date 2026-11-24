@@ -13,7 +13,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.stateIn
 
 /** Expone el estado de la conexión a internet como StateFlow (ConnectivityManager). */
-class   ConnectivityObserver(context: Context, scope: CoroutineScope) {
+class ConnectivityObserver(context: Context, scope: CoroutineScope) {
 
     private val manager =
         context.applicationContext.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager

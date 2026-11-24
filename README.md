@@ -132,13 +132,50 @@ flowchart TD
 | Gris Pizarra | `#1C2833` | Texto |
 | Verde Alga | `#27AE60` | Éxito / estados positivos |
 
-## Alcance y limitaciones del MVP
+## Versión 1.1.0 — mejoras
 
-- **Sincronización simulada:** aún no existe una API. El botón de sincronizar (historial) exige conexión a internet,
-  espera 1,5 s y marca las muestras como sincronizadas. El punto de integración está en `SampleViewModel.sincronizar()`.
+| Requisito | Dónde está |
+|---|---|
+| Retrofit + API de clima | `data/network/WeatherApi.kt` (Open-Meteo, sin clave), `WeatherRepository`, `ClimaViewModel`, `ui/components/ClimaCard.kt` |
+| Base de datos en la nube (InsForge) | `data/network/InsForgeApi.kt`, `SincronizadorInsForge.kt`; tabla en `docs/insforge_schema.sql` |
+| Pruebas unitarias (JUnit 5) y funcionales | `app/src/test/...` (lógica, Retrofit y sincronización con MockWebServer, ViewModel) |
+| Pruebas de interfaz (Compose UI Test) | `app/src/androidTest/.../LoginScreenTest.kt` |
+| Cobertura (Kover) | plugin `org.jetbrains.kotlinx.kover` en `app/build.gradle.kts` |
+| APK firmada y versión | `signingConfigs` + `keystore.properties`; versión en `gradle.properties` (1.1.0, código 2) |
+| Diseño: pantalla completa, cards, íconos, gráficos | `MainScreen`, `StatusScreen`, `MuestraCard` (miniatura), `ui/components/Graficos.kt` |
+
+### Comandos (ejecutar en Android Studio > Terminal)
+
+```
+./gradlew testDebugUnitTest            # pruebas JUnit 5
+./gradlew koverHtmlReportDebug         # reporte: app/build/reports/kover/htmlDebug/index.html
+./gradlew connectedDebugAndroidTest    # pruebas de interfaz (emulador o celular conectado)
+./gradlew assembleRelease              # APK firmada: app/build/outputs/apk/release/app-release.apk
+```
+
+En Windows (PowerShell) usa `.\gradlew` en vez de `./gradlew`. Si falla, usa el panel *Gradle* de Android Studio (Tasks > verification) o *Build > Generate Signed App Bundle / APK*
+con el keystore de `keystore/aquaxor-release.jks` (alias `aquaxor`, claves en `keystore.properties`).
+Ese keystore es solo para el proyecto académico: en uno real no se sube al repositorio.
+
+### Configurar InsForge
+
+1. Crea un proyecto en InsForge y ejecuta `docs/insforge_schema.sql`.
+2. En `gradle.properties` completa `INSFORGE_URL` (por ejemplo `https://tu-app.insforge.app`) e `INSFORGE_KEY` (clave anónima o token).
+3. Sincroniza Gradle. Sin esos valores la app funciona en modo local y el botón de sincronizar lo avisa.
+La app envía `POST /api/database/records/muestras` con un arreglo JSON y cabecera `Authorization: Bearer ...`.
+
+### Cambios de usabilidad (última revisión)
+
+- Inicio: cada indicador es tocable y explica qué es (muestras, por revisar, individuos hoy, sin enviar a la nube).
+- Formulario en una sola pantalla con fecha y hora de solo lectura (reloj en vivo), listas compactas y evidencia incluida.
+- Historial: filtros por estado (color + ícono + cantidad) y por período (ícono + cantidad).
+- Detalle de muestra: botón de descarga individual (CSV) e íconos en cada dato.
+
+## Alcance y limitaciones
+
+- **InsForge:** el envío es de una vía (dispositivo → nube); las muestras se insertan, no se actualizan.
+- **Clima:** ubicación fija en Puerto Montt; requiere internet y muestra un mensaje si falla.
+- **Cobertura:** Kover excluye pantallas Compose, Room y clases del framework; esas capas se cubren con las pruebas de interfaz.
 - **Autenticación local:** las contraseñas se guardan como hash SHA-256 con sal fija, adecuado para un MVP académico.
-  Para producción se necesita autenticación en servidor.
-- **Fotos:** se copian al almacenamiento privado de la app (`filesDir/adjuntos`), así el historial no depende de
-  permisos de galería ni de que el archivo original siga existiendo.
-- **Fuera de alcance (según Clase 1):** conteo automático por imágenes, dashboard estadístico avanzado, integración con
-  sistemas externos y pruebas automatizadas.
+- **Fotos:** se copian al almacenamiento privado de la app (`filesDir/adjuntos`).
+- **Fuera de alcance:** conteo automático por imágenes y sincronización bidireccional.

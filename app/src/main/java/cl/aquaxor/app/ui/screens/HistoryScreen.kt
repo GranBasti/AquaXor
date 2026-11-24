@@ -17,6 +17,19 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.AllInclusive
+import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.FactCheck
+import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Today
+import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
+import androidx.compose.ui.graphics.vector.ImageVector
+import cl.aquaxor.app.ui.components.colorEstado
+import cl.aquaxor.app.ui.components.iconoEstado
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.FileDownload
@@ -68,6 +81,8 @@ fun HistoryScreen(
     val filtros by sampleVm.filtros.collectAsStateWithLifecycle()
     val centros by sampleVm.centros.collectAsStateWithLifecycle()
     val sincronizando by sampleVm.sincronizando.collectAsStateWithLifecycle()
+    val porEstado by sampleVm.conteoPorEstado.collectAsStateWithLifecycle()
+    val porRango by sampleVm.conteoRangos.collectAsStateWithLifecycle()
     var menuCentro by remember { mutableStateOf(false) }
 
     // Documentos: el usuario elige dónde guardar el CSV (Storage Access Framework)
@@ -133,7 +148,8 @@ fun HistoryScreen(
                     .padding(horizontal = 16.dp, vertical = 8.dp)
             )
 
-            // Filtro por estado de revisión
+            // ---- Estado de revisión: color + ícono + cantidad ----
+            EtiquetaFiltro(Icons.Default.FactCheck, "Estado de revisión")
             Row(
                 Modifier
                     .horizontalScroll(rememberScrollState())
@@ -143,18 +159,37 @@ fun HistoryScreen(
                 FilterChip(
                     selected = filtros.estado == null,
                     onClick = { sampleVm.onFiltroEstado(null) },
-                    label = { Text("Todos") }
+                    label = { Text("Todos (${porEstado.values.sum()})") },
+                    leadingIcon = { Icon(Icons.Default.AllInclusive, contentDescription = null, modifier = Modifier.size(18.dp)) }
                 )
                 EstadoRevision.entries.forEach { e ->
+                    val (fondo, texto) = colorEstado(e)
                     FilterChip(
                         selected = filtros.estado == e,
                         onClick = { sampleVm.onFiltroEstado(if (filtros.estado == e) null else e) },
-                        label = { Text(e.etiqueta) }
+                        label = { Text("${e.etiqueta} (${porEstado[e] ?: 0})") },
+                        leadingIcon = { Icon(iconoEstado(e), contentDescription = null, modifier = Modifier.size(18.dp)) },
+                        colors = FilterChipDefaults.filterChipColors(
+                            containerColor = fondo.copy(alpha = 0.45f),
+                            labelColor = texto,
+                            iconColor = texto,
+                            selectedContainerColor = fondo,
+                            selectedLabelColor = texto,
+                            selectedLeadingIconColor = texto
+                        ),
+                        border = FilterChipDefaults.filterChipBorder(
+                            enabled = true,
+                            selected = filtros.estado == e,
+                            borderColor = texto.copy(alpha = 0.35f),
+                            selectedBorderColor = texto,
+                            selectedBorderWidth = 2.dp
+                        )
                     )
                 }
             }
 
-            // Filtro por rango de fechas y por centro
+            // ---- Período (con la cantidad de muestras de cada uno) y centro ----
+            EtiquetaFiltro(Icons.Default.DateRange, "Período y centro")
             Row(
                 Modifier
                     .horizontalScroll(rememberScrollState())
@@ -166,7 +201,8 @@ fun HistoryScreen(
                     FilterChip(
                         selected = filtros.rango == r,
                         onClick = { sampleVm.onFiltroRango(r) },
-                        label = { Text(r.etiqueta) }
+                        label = { Text("${r.etiqueta} (${porRango[r] ?: 0})") },
+                        leadingIcon = { Icon(iconoRango(r), contentDescription = null, modifier = Modifier.size(18.dp)) }
                     )
                 }
                 Box {
@@ -174,6 +210,7 @@ fun HistoryScreen(
                         selected = filtros.centroId != null,
                         onClick = { menuCentro = true },
                         label = { Text(centros.firstOrNull { it.id == filtros.centroId }?.nombre ?: "Centro: todos") },
+                        leadingIcon = { Icon(Icons.Default.LocationOn, contentDescription = null, modifier = Modifier.size(18.dp)) },
                         trailingIcon = { Icon(Icons.Default.ArrowDropDown, contentDescription = null) }
                     )
                     DropdownMenu(expanded = menuCentro, onDismissRequest = { menuCentro = false }) {
@@ -234,4 +271,23 @@ fun HistoryScreen(
             }
         }
     }
+}
+
+@Composable
+private fun EtiquetaFiltro(icono: ImageVector, texto: String) {
+    Row(
+        Modifier.padding(start = 16.dp, top = 6.dp, bottom = 2.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(icono, contentDescription = null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.primary)
+        Spacer(Modifier.width(6.dp))
+        Text(texto, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+    }
+}
+
+private fun iconoRango(r: RangoFecha): ImageVector = when (r) {
+    RangoFecha.TODOS -> Icons.Default.AllInclusive
+    RangoFecha.HOY -> Icons.Default.Today
+    RangoFecha.SIETE_DIAS -> Icons.Default.DateRange
+    RangoFecha.TREINTA_DIAS -> Icons.Default.CalendarMonth
 }

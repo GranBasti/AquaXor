@@ -2,6 +2,7 @@ package cl.aquaxor.app.data.repository
 
 import androidx.room.withTransaction
 import cl.aquaxor.app.data.local.AquaDatabase
+import cl.aquaxor.app.data.network.PendientesStore
 import cl.aquaxor.app.model.Adjunto
 import cl.aquaxor.app.model.Centro
 import cl.aquaxor.app.model.ConteoEstado
@@ -9,6 +10,7 @@ import cl.aquaxor.app.model.EstadoRevision
 import cl.aquaxor.app.model.Linea
 import cl.aquaxor.app.model.Muestra
 import cl.aquaxor.app.model.MuestraResumen
+import cl.aquaxor.app.model.PuntoMuestra
 import cl.aquaxor.app.model.Rol
 import cl.aquaxor.app.model.Tren
 import cl.aquaxor.app.model.Usuario
@@ -21,7 +23,7 @@ import kotlinx.coroutines.sync.withLock
  * Única fuente de datos de la app (Room / SQLite).
  * Los ViewModels nunca tocan los DAO directamente.
  */
-class AquaRepository(private val db: AquaDatabase) {
+class AquaRepository(private val db: AquaDatabase) : PendientesStore {
 
     private val usuarioDao = db.usuarioDao()
     private val catalogoDao = db.catalogoDao()
@@ -102,12 +104,15 @@ class AquaRepository(private val db: AquaDatabase) {
 
     suspend fun cambiarEstado(id: Long, estado: EstadoRevision) = muestraDao.cambiarEstado(id, estado.name)
     suspend fun marcarSincronizadas(): Int = muestraDao.marcarSincronizadas()
+    override suspend fun marcarSincronizadas(ids: List<Long>): Int = muestraDao.marcarSincronizadas(ids)
+    override suspend fun pendientesDeSincronizar(): List<MuestraResumen> = muestraDao.pendientesDeSincronizar()
 
     // ---------------- Indicadores ----------------
     fun totalMuestras(): Flow<Int> = muestraDao.totalMuestras()
     fun conteoPorEstado(): Flow<List<ConteoEstado>> = muestraDao.conteoPorEstado()
     fun individuosDesde(desde: Long): Flow<Int> = muestraDao.individuosDesde(desde)
     fun sinSincronizar(): Flow<Int> = muestraDao.sinSincronizar()
+    fun puntosDesde(desde: Long): Flow<List<PuntoMuestra>> = muestraDao.puntosDesde(desde)
 
     // ---------------- Datos de demostración (ficticios) ----------------
     private class Demo(

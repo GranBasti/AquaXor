@@ -16,7 +16,21 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CloudDone
+import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.FileDownload
+import androidx.compose.material.icons.filled.Height
+import androidx.compose.material.icons.filled.Hub
+import androidx.compose.material.icons.filled.LinearScale
+import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.Straighten
+import androidx.compose.material.icons.filled.Timeline
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -78,6 +92,11 @@ fun DetalleScreen(
     var dialogoEstado by rememberSaveable { mutableStateOf(false) }
     var dialogoEliminar by rememberSaveable { mutableStateOf(false) }
 
+    // Descarga individual: el usuario elige dónde guardar el CSV de esta muestra
+    val descargar = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("text/csv")) { uri ->
+        if (uri != null) sampleVm.exportarMuestra(id, uri)
+    }
+
     fun abrir(ruta: String) {
         abrirArchivo(context, sampleVm.uriAdjunto(ruta), sampleVm.mimeAdjunto(ruta)) {
             sampleVm.avisar("No hay una aplicación para abrir este archivo")
@@ -90,6 +109,9 @@ fun DetalleScreen(
                 titulo = "Muestra #$id",
                 onBack = onBack,
                 actions = {
+                    IconButton(onClick = { descargar.launch(sampleVm.nombreArchivoMuestra(id)) }) {
+                        Icon(Icons.Default.FileDownload, contentDescription = "Descargar esta muestra")
+                    }
                     IconButton(onClick = onEditar) { Icon(Icons.Default.Edit, contentDescription = "Editar") }
                     if (rol?.puedeEliminar() == true) {
                         IconButton(onClick = { dialogoEliminar = true }) {
@@ -148,15 +170,18 @@ fun DetalleScreen(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        FilaDato("Fecha y hora", Formatos.fechaHora(m.fechaHora))
-                        FilaDato("Centro", item.centroNombre)
-                        FilaDato("Tren", item.trenNombre)
-                        FilaDato("Línea", item.lineaNombre)
-                        FilaDato("Tramo", m.tramo)
-                        FilaDato("Profundidad", m.profundidadM?.let { "${Formatos.decimal(it)} m" } ?: "—")
-                        FilaDato("Talla promedio", m.tallaMm?.let { "${Formatos.decimal(it)} mm" } ?: "—")
-                        FilaDato("Registrada por", item.operadorNombre)
-                        FilaDato("Sincronización", if (m.sincronizada) "Sincronizada" else "Pendiente")
+                        FilaDato(Icons.Default.Schedule, "Fecha y hora", Formatos.fechaHora(m.fechaHora))
+                        FilaDato(Icons.Default.LocationOn, "Centro", item.centroNombre)
+                        FilaDato(Icons.Default.Hub, "Tren", item.trenNombre)
+                        FilaDato(Icons.Default.Timeline, "Línea", item.lineaNombre)
+                        FilaDato(Icons.Default.LinearScale, "Tramo", m.tramo)
+                        FilaDato(Icons.Default.Height, "Profundidad", m.profundidadM?.let { "${Formatos.decimal(it)} m" } ?: "—")
+                        FilaDato(Icons.Default.Straighten, "Talla promedio", m.tallaMm?.let { "${Formatos.decimal(it)} mm" } ?: "—")
+                        FilaDato(Icons.Default.Person, "Registrada por", item.operadorNombre)
+                        FilaDato(
+                            if (m.sincronizada) Icons.Default.CloudDone else Icons.Default.CloudOff,
+                            "Sincronización", if (m.sincronizada) "Sincronizada" else "Pendiente"
+                        )
                     }
                 }
 
@@ -239,14 +264,16 @@ fun DetalleScreen(
 }
 
 @Composable
-private fun FilaDato(etiqueta: String, valor: String) {
+private fun FilaDato(icono: ImageVector, etiqueta: String, valor: String) {
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
+        Icon(icono, contentDescription = null, modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary)
+        Spacer(Modifier.width(8.dp))
         Text(
             etiqueta,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.weight(0.4f)
+            modifier = Modifier.weight(0.38f)
         )
-        Text(valor, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, modifier = Modifier.weight(0.6f))
+        Text(valor, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, modifier = Modifier.weight(0.62f))
     }
 }
